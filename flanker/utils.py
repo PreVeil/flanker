@@ -5,7 +5,6 @@ Utility functions and classes used by flanker.
 import logging
 import re
 
-import cchardet
 import chardet
 
 from flanker.mime.message import errors
@@ -29,7 +28,7 @@ def _guess_and_convert(value):
         return _guess_and_convert_with(value, detector=chardet)
 
 
-def _guess_and_convert_with(value, detector=cchardet):
+def _guess_and_convert_with(value, detector=chardet):
     """
     Try to guess the encoding of the passed value with the provided detector
     and decode it.
