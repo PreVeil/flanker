@@ -5,14 +5,8 @@ can handle email addresses and urls.
 See the address.py module for the public interfaces to the library and the
 parser.py module for the implementation of the recursive descent parser
 used to parse email addresses and urls.
-
-To override the default DNS lookup library or MX Cache, use the
-set_dns_lookup and set_mx_cache methods. For more details, see the User Manual.
 '''
 import re
-
-from flanker.addresslib.drivers.redis_driver import RedisCache
-from flanker.addresslib.drivers.dns_lookup import DNSLookup
 
 from flanker.addresslib.plugins import yahoo
 from flanker.addresslib.plugins import aol
@@ -21,9 +15,6 @@ from flanker.addresslib.plugins import icloud
 from flanker.addresslib.plugins import hotmail
 from flanker.addresslib.plugins import google
 
-
-mx_cache = RedisCache()
-dns_lookup = DNSLookup()
 
 YAHOO_PATTERN = re.compile(r'''mta[0-9]+\.am[0-9]+\.yahoodns\.net$''')
 GMAIL_PATTERN = re.compile(r'''.*gmail-smtp-in\.l\.google.com$''')
@@ -40,11 +31,3 @@ CUSTOM_GRAMMAR_LIST = [
     (HOTMAIL_PATTERN, hotmail),
     (GOOGLE_PATTERN, google),
 ]
-
-def set_dns_lookup(dlookup):
-    global dns_lookup
-    dns_lookup = dlookup
-
-def set_mx_cache(mcache):
-    global mx_cache
-    mx_cache = mcache

@@ -1,6 +1,6 @@
 import logging
 import email
-from webob.multidict import MultiDict
+from ....multidict import MultiDict
 from flanker.mime.message.charsets import convert_to_unicode
 from flanker.mime.message.headers.headers import remove_newlines, MimeHeaders
 from flanker.mime.message.part import RichPartMixin

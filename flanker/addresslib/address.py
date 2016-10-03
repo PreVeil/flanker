@@ -17,17 +17,6 @@ Public Functions in flanker.addresslib.address module:
       mode will fail at the first instance of invalid grammar, relaxed modes
       tries to recover and continue.
 
-    * validate_address(addr_spec)
-
-      Validates (parse, plus dns, mx check, and custom grammar) a single
-      address spec. In the case of a valid address returns an EmailAddress
-      object, otherwise returns None.
-
-    * validate_list(addr_list, as_tuple=False)
-
-      Validates an address list, and returns a tuple of parsed and unparsed
-      portions.
-
 When valid addresses are returned, they are returned as an instance of either
 EmailAddress or UrlAddress in flanker.addresslib.address.
 
@@ -37,7 +26,6 @@ See the parser.py module for implementation details of the parser.
 import time
 import flanker.addresslib.parser
 from flanker.addresslib.quote import smart_unquote, smart_quote
-import flanker.addresslib.validate
 
 from flanker.addresslib.parser import MAX_ADDRESS_LENGTH
 from flanker.utils import is_pure_ascii
@@ -149,142 +137,6 @@ def parse_list(address_list, strict=False, as_tuple=False, metrics=False):
     if as_tuple:
         return p, u, mtimes
     return p, mtimes
-
-
-@metrics_wrapper()
-def validate_address(addr_spec, metrics=False):
-    """
-    Given an addr-spec, runs the pre-parser, the parser, DNS MX checks,
-    MX existence checks, and if available, ESP specific grammar for the
-    local part.
-
-    In the case of a valid address returns an EmailAddress object, otherwise
-    returns None. If requested, will also return the parsing time metrics.
-
-    Examples:
-        >>> address.validate_address('john@non-existent-domain.com')
-        None
-
-        >>> address.validate_address('user@gmail.com')
-        None
-
-        >>> address.validate_address('user.1234@gmail.com')
-        user.1234@gmail.com
-    """
-    mtimes = {'parsing': 0, 'mx_lookup': 0,
-        'dns_lookup': 0, 'mx_conn':0 , 'custom_grammar':0}
-
-    # sanity check
-    if addr_spec is None:
-        return None, mtimes
-    if not is_pure_ascii(addr_spec):
-        return None, mtimes
-
-    # preparse address into its parts and perform any ESP specific pre-parsing
-    addr_parts = flanker.addresslib.validate.preparse_address(addr_spec)
-    if addr_parts is None:
-        return None, mtimes
-
-    # run parser against address
-    bstart = time.time()
-    paddr = parse('@'.join(addr_parts), addr_spec_only=True)
-    mtimes['parsing'] = time.time() - bstart
-    if paddr is None:
-        return None, mtimes
-
-    # lookup if this domain has a mail exchanger
-    exchanger, mx_metrics = \
-        flanker.addresslib.validate.mail_exchanger_lookup(addr_parts[-1], metrics=True)
-    mtimes['mx_lookup'] = mx_metrics['mx_lookup']
-    mtimes['dns_lookup'] = mx_metrics['dns_lookup']
-    mtimes['mx_conn'] = mx_metrics['mx_conn']
-    if exchanger is None:
-        return None, mtimes
-
-    # lookup custom local-part grammar if it exists
-    bstart = time.time()
-    plugin = flanker.addresslib.validate.plugin_for_esp(exchanger)
-    mtimes['custom_grammar'] = time.time() - bstart
-    if plugin and plugin.validate(addr_parts[0]) is False:
-        return None, mtimes
-
-    return paddr, mtimes
-
-
-@metrics_wrapper()
-def validate_list(addr_list, as_tuple=False, metrics=False):
-    """
-    Validates an address list, and returns a tuple of parsed and unparsed
-    portions.
-
-    Returns results as a list or tuple consisting of the parsed addresses
-    and unparsable protions. If requested, will also return parisng time
-    metrics.
-
-    Examples:
-        >>> address.validate_address_list('a@mailgun.com, c@mailgun.com')
-        [a@mailgun.com, c@mailgun.com]
-
-        >>> address.validate_address_list('a@mailgun.com, b@example.com')
-        [a@mailgun.com]
-
-        >>> address.validate_address_list('a@b, c@d, e@example.com', as_tuple=True)
-        ([a@mailgun.com, c@mailgun.com], ['e@example.com'])
-    """
-    mtimes = {'parsing': 0, 'mx_lookup': 0,
-        'dns_lookup': 0, 'mx_conn':0 , 'custom_grammar':0}
-
-    if addr_list is None:
-        return None, mtimes
-
-    # parse addresses
-    bstart = time.time()
-    parsed_addresses, unparseable = parse_list(addr_list, as_tuple=True)
-    mtimes['parsing'] = time.time() - bstart
-
-    plist = flanker.addresslib.address.AddressList()
-    ulist = []
-
-    # make sure parsed list pass dns and esp grammar
-    for paddr in parsed_addresses:
-
-        # lookup if this domain has a mail exchanger
-        exchanger, mx_metrics = \
-            flanker.addresslib.validate.mail_exchanger_lookup(paddr.hostname, metrics=True)
-        mtimes['mx_lookup'] += mx_metrics['mx_lookup']
-        mtimes['dns_lookup'] += mx_metrics['dns_lookup']
-        mtimes['mx_conn'] += mx_metrics['mx_conn']
-
-        if exchanger is None:
-            ulist.append(paddr.full_spec())
-            continue
-
-        # lookup custom local-part grammar if it exists
-        plugin = flanker.addresslib.validate.plugin_for_esp(exchanger)
-        bstart = time.time()
-        if plugin and plugin.validate(paddr.mailbox) is False:
-            ulist.append(paddr.full_spec())
-            continue
-        mtimes['custom_grammar'] = time.time() - bstart
-
-        plist.append(paddr)
-
-    # loop over unparsable list and check if any can be fixed with
-    # preparsing cleanup and if so, run full validator
-    for unpar in unparseable:
-        paddr, metrics = validate_address(unpar, metrics=True)
-        if paddr:
-            plist.append(paddr)
-        else:
-            ulist.append(unpar)
-
-        # update all the metrics
-        for k, v in metrics.iteritems():
-            metrics[k] += v
-
-    if as_tuple:
-        return plist, ulist, mtimes
-    return plist, mtimes
 
 
 def is_email(string):
