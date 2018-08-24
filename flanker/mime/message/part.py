@@ -632,7 +632,33 @@ def encode_charset(preferred_charset, text):
 
 def encode_transfer_encoding(encoding, body):
     if encoding == 'quoted-printable':
-        return email.encoders._qencode(body)
+        # unfortunatly quopri (internal quoted-printable encoder/decore of python) uses `LF` (\n)
+        # for its soft line breaks, despite the clear definition of line break as `CRLF`(\r\n) in
+        # both RFC2045 https://tools.ietf.org/html/rfc2045#page-19 , RFC822 clear usage of `CRLF` for line breaks;
+        # as well as rfc1521 (5.1, Rule#4) https://www.ietf.org/rfc/rfc1521.txt :
+        #       Rule #4 (Line Breaks): A line break in a text body, independent of
+        #       what its representation is following the canonical representation
+        #       of the data being encoded, must be represented by a (RFC 822) line
+        #       break, which is a CRLF sequence, in the Quoted-Printable encoding.
+        #
+        #
+        # the encoder will, mistakenly, insert a soft line break `=\n` after every MAXLINELEN (75) characters,
+        # per RFC2045 (6.7) Notes#4 an `LF` or `CR` that is not part of `CRLF` pair, is not considered a special characters
+        # , hence, should be shown, or even further, again per RFC2045 (6.7 Quoted-Printable CTE) Notes #2:
+        #       An "=" followed by a character that is neither a
+        #       hexadecimal digit (including "abcdef") nor the CR
+        #       character of a CRLF pair is illegal.  This case can be
+        #       the result of US-ASCII text having been included in a
+        #       quoted-printable part of a message without itself
+        #       having been subjected to quoted-printable encoding.  A
+        #       reasonable approach by a robust implementation might be
+        #       to include the "=" character and the following
+        #       character in the decoded data without any
+        #       transformation and, if possible, indicate to the user
+        #       that proper decoding was not possible at this point in
+        #       the data.
+        # this means => `=\n` is considered an illegal sequence
+        return email.quoprimime.encode(body, binary=False, maxlinelen=76, eol='\r\n')
     elif encoding == 'base64':
         return email.encoders._bencode(body)
     else:
