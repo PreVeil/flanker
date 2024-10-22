@@ -83,7 +83,7 @@ def decode_quoted_printable(val):
 
 
 def detect_audio_type(val):
-    return audio._whatsnd(val)
+    return audio._what(val)
 
 
 def make_message_id():
