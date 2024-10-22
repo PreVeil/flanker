@@ -34,15 +34,15 @@ jobs:
       with:
         python-version: '3.12'
 
-    - name: Install dependencies
+    - name: Install dependencies and build a wheel
       run: |
         python3 -m venv .venv
         source .venv/bin/activate
-        pip install -U pip setuptools
-        pip install poetry
-        poetry install
+        python3 -m pip install -r pvl/requirements3.txt
+        python setup.py bdist_wheel
       shell: bash
 
+    #TODO:
     # - name: Run tests
     #   run: |
     #     source .venv/bin/activate
@@ -55,12 +55,6 @@ jobs:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
-
-    # - name: Build python wheels
-    #   run: |
-    #     source .venv/bin/activate
-    #     poetry build
-    #   shell: bash
 
     # - name: Upload artifacts to s3
     #   run: |

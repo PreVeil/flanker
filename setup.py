@@ -10,7 +10,7 @@ tests_require = [
 ],
 
 setup(name='flanker',
-      version='0.9.11',
+      version='0.9.15+preveil1',
       description='Mailgun Parsing Tools',
       long_description=open('README.rst').read(),
       classifiers=[

@@ -1,0 +1,8 @@
+pytest==8.3.3
+setuptools==75.2.0
+tox==4.23.2
+wheel==0.44.0
+
+# support for python 2 -> 3
+#six==1.16.0
+#future==1.0.0
