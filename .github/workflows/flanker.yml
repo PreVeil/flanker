@@ -26,7 +26,7 @@ jobs:
     steps:
 
     - name: Checkout
-      if: github.event_name == 'push'
+      #if: github.event_name == 'push'
       uses: actions/checkout@v4
 
     - name: Set up Python 3
@@ -58,6 +58,7 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
 
+    #TODO:
     # - name: Upload artifacts to s3
     #   run: |
     #     [[ "${{ github.event_name }}" == "pull_request" ]] && HEAD_COMMIT=${{ github.event.pull_request.head.sha }}
