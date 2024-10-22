@@ -1,4 +1,4 @@
-Flanker - email address and MIME parsing for Python
+(Preveil's Fork of) Flanker - email address and MIME parsing for Python
 ===================================================
 
 .. image:: https://travis-ci.org/mailgun/flanker.svg?branch=master
