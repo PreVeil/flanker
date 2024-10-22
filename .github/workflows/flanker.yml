@@ -38,7 +38,7 @@ jobs:
       run: |
         python3 -m venv .venv
         source .venv/bin/activate
-        echo pwd
+        pwd
         ls -al
         python3 -m pip install -r pvl/requirements3.txt
         python setup.py bdist_wheel
